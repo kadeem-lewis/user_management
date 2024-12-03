@@ -1,4 +1,8 @@
+""" This module contains the description of the API. """
+
+
 def getDescription():
+    """Returns the description of the API"""
     description = """
 Application Overview:
 

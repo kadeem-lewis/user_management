@@ -1,3 +1,5 @@
+"""This module contains dependencies that are used in the application."""
+
 from builtins import Exception, dict, str
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -7,15 +9,18 @@ from app.utils.template_manager import TemplateManager
 from app.services.email_service import EmailService
 from app.services.jwt_service import decode_token
 from settings.config import Settings
-from fastapi import Depends
+
 
 def get_settings() -> Settings:
     """Return application settings."""
     return Settings()
 
+
 def get_email_service() -> EmailService:
+    """Dependency that provides an instance of EmailService."""
     template_manager = TemplateManager()
     return EmailService(template_manager=template_manager)
+
 
 async def get_db() -> AsyncSession:
     """Dependency that provides a database session for each request."""
@@ -25,11 +30,13 @@ async def get_db() -> AsyncSession:
             yield session
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-        
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
+
 def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Dependency that retrieves the current user from the JWT token."""
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
@@ -44,9 +51,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return {"user_id": user_id, "role": user_role}
 
+
 def require_role(role: str):
+    """Dependency that checks if the current user has the required role."""
+
     def role_checker(current_user: dict = Depends(get_current_user)):
         if current_user["role"] not in role:
             raise HTTPException(status_code=403, detail="Operation not permitted")
         return current_user
+
     return role_checker

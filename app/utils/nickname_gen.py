@@ -1,3 +1,5 @@
+""" Module for generating random nicknames. """
+
 from builtins import str
 import random
 

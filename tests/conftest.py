@@ -40,14 +40,19 @@ from app.services.jwt_service import create_access_token
 fake = Faker()
 
 settings = get_settings()
-TEST_DATABASE_URL = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
+TEST_DATABASE_URL = settings.database_url.replace(
+    "postgresql://", "postgresql+asyncpg://"
+)
 engine = create_async_engine(TEST_DATABASE_URL, echo=settings.debug)
-AsyncTestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+AsyncTestingSessionLocal = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
 AsyncSessionScoped = scoped_session(AsyncTestingSessionLocal)
 
 
 @pytest.fixture
 def email_service():
+    """Fixture to provide an email service for sending emails."""
     # Assuming the TemplateManager does not need any arguments for initialization
     template_manager = TemplateManager()
     email_service = EmailService(template_manager=template_manager)
@@ -57,6 +62,7 @@ def email_service():
 # this is what creates the http client for your api tests
 @pytest.fixture(scope="function")
 async def async_client(db_session):
+    """Fixture to provide an async test client for the FastAPI application."""
     async with AsyncClient(app=app, base_url="http://testserver") as client:
         app.dependency_overrides[get_db] = lambda: db_session
         try:
@@ -64,34 +70,42 @@ async def async_client(db_session):
         finally:
             app.dependency_overrides.clear()
 
+
 @pytest.fixture(scope="session", autouse=True)
 def initialize_database():
+    """Initialize the database for the testing session."""
     try:
         Database.initialize(settings.database_url)
     except Exception as e:
         pytest.fail(f"Failed to initialize the database: {str(e)}")
 
+
 # this function setup and tears down (drops tales) for each test function, so you have a clean database for each test.
 @pytest.fixture(scope="function", autouse=True)
 async def setup_database():
+    """Create and set up a new database session for each test function."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine.begin() as conn:
         # you can comment out this line during development if you are debugging a single test
-         await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+
 
 @pytest.fixture(scope="function")
 async def db_session(setup_database):
+    """Fixture to provide an async database session for each test function."""
     async with AsyncSessionScoped() as session:
         try:
             yield session
         finally:
             await session.close()
 
+
 @pytest.fixture(scope="function")
 async def locked_user(db_session):
+    """Fixture to create a locked user"""
     unique_email = fake.email()
     user_data = {
         "nickname": fake.user_name(),
@@ -109,8 +123,10 @@ async def locked_user(db_session):
     await db_session.commit()
     return user
 
+
 @pytest.fixture(scope="function")
 async def user(db_session):
+    """Fixture to create a user"""
     user_data = {
         "nickname": fake.user_name(),
         "first_name": fake.first_name(),
@@ -126,8 +142,10 @@ async def user(db_session):
     await db_session.commit()
     return user
 
+
 @pytest.fixture(scope="function")
 async def verified_user(db_session):
+    """Fixture to create a verified user"""
     user_data = {
         "nickname": fake.user_name(),
         "first_name": fake.first_name(),
@@ -143,8 +161,10 @@ async def verified_user(db_session):
     await db_session.commit()
     return user
 
+
 @pytest.fixture(scope="function")
 async def unverified_user(db_session):
+    """Fixture to create an unverified user"""
     user_data = {
         "nickname": fake.user_name(),
         "first_name": fake.first_name(),
@@ -160,8 +180,10 @@ async def unverified_user(db_session):
     await db_session.commit()
     return user
 
+
 @pytest.fixture(scope="function")
 async def users_with_same_role_50_users(db_session):
+    """Fixture to create 50 users with the same role"""
     users = []
     for _ in range(50):
         user_data = {
@@ -180,8 +202,10 @@ async def users_with_same_role_50_users(db_session):
     await db_session.commit()
     return users
 
+
 @pytest.fixture
 async def admin_user(db_session: AsyncSession):
+    """Fixture to create an admin user"""
     user = User(
         nickname="admin_user",
         email="admin@example.com",
@@ -195,8 +219,10 @@ async def admin_user(db_session: AsyncSession):
     await db_session.commit()
     return user
 
+
 @pytest.fixture
 async def manager_user(db_session: AsyncSession):
+    """Fixture to create a manager user"""
     user = User(
         nickname="manager_john",
         first_name="John",
@@ -210,26 +236,34 @@ async def manager_user(db_session: AsyncSession):
     await db_session.commit()
     return user
 
+
 # Configure a fixture for each type of user role you want to test
 @pytest.fixture(scope="function")
 def admin_token(admin_user):
+    """Fixture to create an authentication token for an admin user"""
     # Assuming admin_user has an 'id' and 'role' attribute
     token_data = {"sub": str(admin_user.id), "role": admin_user.role.name}
     return create_access_token(data=token_data, expires_delta=timedelta(minutes=30))
 
+
 @pytest.fixture(scope="function")
 def manager_token(manager_user):
+    """Fixture to create an authentication token for a manager user"""
     token_data = {"sub": str(manager_user.id), "role": manager_user.role.name}
     return create_access_token(data=token_data, expires_delta=timedelta(minutes=30))
 
+
 @pytest.fixture(scope="function")
 def user_token(user):
+    """Fixture to create an authentication token for a regular user"""
     token_data = {"sub": str(user.id), "role": user.role.name}
     return create_access_token(data=token_data, expires_delta=timedelta(minutes=30))
 
+
 @pytest.fixture
 def email_service():
-    if settings.send_real_mail == 'true':
+    """Fixture to provide an email service for sending emails"""
+    if settings.send_real_mail == "true":
         # Return the real email service when specifically testing email functionality
         return EmailService()
     else:

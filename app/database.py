@@ -1,10 +1,14 @@
+"""Database connection and session handling."""
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
 
+
 class Database:
     """Handles database connections and sessions."""
+
     _engine = None
     _session_factory = None
 
@@ -14,7 +18,10 @@ class Database:
         if cls._engine is None:  # Ensure engine is created once
             cls._engine = create_async_engine(database_url, echo=echo, future=True)
             cls._session_factory = sessionmaker(
-                bind=cls._engine, class_=AsyncSession, expire_on_commit=False, future=True
+                bind=cls._engine,
+                class_=AsyncSession,
+                expire_on_commit=False,
+                future=True,
             )
 
     @classmethod
