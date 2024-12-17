@@ -258,17 +258,3 @@ def user_token(user):
     """Fixture to create an authentication token for a regular user"""
     token_data = {"sub": str(user.id), "role": user.role.name}
     return create_access_token(data=token_data, expires_delta=timedelta(minutes=30))
-
-
-@pytest.fixture
-def email_service():
-    """Fixture to provide an email service for sending emails"""
-    if settings.send_real_mail == "true":
-        # Return the real email service when specifically testing email functionality
-        return EmailService()
-    else:
-        # Otherwise, use a mock to prevent actual email sending
-        mock_service = AsyncMock(spec=EmailService)
-        mock_service.send_verification_email.return_value = None
-        mock_service.send_user_email.return_value = None
-        return mock_service
