@@ -107,6 +107,15 @@ async def test_create_user_invalid_email(async_client):
 
 
 @pytest.mark.asyncio
+async def test_create_user_missing_required_fields(async_client, admin_token):
+    """Test creating a user without required fields."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.post("/users/", json={}, headers=headers)
+    assert response.status_code == 422
+    assert "detail" in response.json()
+
+
+@pytest.mark.asyncio
 async def test_login_success(async_client, verified_user):
     """Test successful login with valid credentials."""
     # Attempt to login with the test user
@@ -226,6 +235,18 @@ async def test_update_user_linkedin(async_client, admin_user, admin_token):
 
 
 @pytest.mark.asyncio
+async def test_update_user_invalid_json(async_client, admin_user, admin_token):
+    """Test updating a user with invalid JSON payload."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    invalid_json = "{invalid_json: true"  # Missing closing bracket
+    response = await async_client.put(
+        f"/users/{admin_user.id}", data=invalid_json, headers=headers
+    )
+    assert response.status_code == 422
+    assert "JSON decode error" in response.text
+
+
+@pytest.mark.asyncio
 async def test_list_users_as_admin(async_client, admin_token):
     """Test listing users as an admin."""
     response = await async_client.get(
@@ -251,3 +272,83 @@ async def test_list_users_unauthorized(async_client, user_token):
         "/users/", headers={"Authorization": f"Bearer {user_token}"}
     )
     assert response.status_code == 403  # Forbidden, as expected for regular user
+
+
+@pytest.mark.asyncio
+async def test_update_profile_success(async_client, user_token):
+    """Test updating profile for an authenticated user."""
+    headers = {"Authorization": f"Bearer {user_token}"}
+    payload = {
+        "first_name": "UpdatedFirstName",
+        "bio": "Updated bio for the user.",
+    }
+    response = await async_client.put(
+        "/profile",
+        json=payload,
+        headers=headers,
+    )
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response["first_name"] == "UpdatedFirstName"
+    assert json_response["bio"] == "Updated bio for the user."
+
+
+@pytest.mark.asyncio
+async def test_update_profile_missing_auth(async_client):
+    """Test updating profile without authentication."""
+    payload = {"first_name": "UpdatedFirstName", "bio": "Updated bio for the user."}
+    response = await async_client.put("/profile", json=payload)
+    assert response.status_code == 401  # Unauthorized
+    assert "Not authenticated" in response.json().get("detail", "")
+
+
+@pytest.mark.asyncio
+async def test_update_profile_invalid_data(async_client, user_token):
+    """Test updating profile with invalid data."""
+    headers = {"Authorization": f"Bearer {user_token}"}
+    payload = {}  # No valid fields provided
+    response = await async_client.put(
+        "/profile",
+        json=payload,
+        headers=headers,
+    )
+    assert response.status_code == 422  # Unprocessable Entity
+    assert "value_error" in response.json()["detail"][0]["type"]
+
+
+@pytest.fixture
+def fake_token():
+    """Return a fake token for testing."""
+    return "fake_token"
+
+
+@pytest.mark.asyncio
+async def test_update_profile_user_not_found(async_client, fake_token):
+    """Test updating profile for a non-existent user."""
+
+    headers = {"Authorization": f"Bearer {fake_token}"}
+    payload = {
+        "first_name": "NonExistentUser",
+        "bio": "This user does not exist anymore.",
+    }
+    response = await async_client.put(
+        "/profile",
+        json=payload,
+        headers=headers,
+    )
+    assert response.status_code == 401  # Unauthorized
+
+
+@pytest.mark.asyncio
+async def test_update_user_professional_status_allowed(
+    async_client, admin_token, admin_user
+):
+    """Test that an admin can update a user's professional status."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.put(
+        f"/users/{admin_user.id}/status",
+        json={"is_professional": True},  # Correctly formatted JSON payload
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["is_professional"] is True

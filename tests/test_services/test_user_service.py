@@ -219,3 +219,23 @@ async def test_unlock_user_account(db_session, locked_user):
     assert unlocked, "The account should be unlocked"
     refreshed_user = await UserService.get_by_id(db_session, locked_user.id)
     assert not refreshed_user.is_locked, "The user should no longer be locked"
+
+
+@pytest.mark.asyncio
+async def test_delete_locked_user(db_session, locked_user):
+    """Test that a locked user can still be deleted."""
+    assert locked_user.is_locked, "User should initially be locked"
+    deletion_success = await UserService.delete(db_session, locked_user.id)
+    assert deletion_success is True
+    user = await UserService.get_by_id(db_session, locked_user.id)
+    assert user is None, "Locked user should be deleted"
+
+
+@pytest.mark.asyncio
+async def test_locked_user_login(db_session, locked_user):
+    """Test that a locked user cannot log in."""
+    user_data = {"email": locked_user.email, "password": "CorrectPassword123!"}
+    logged_in_user = await UserService.login_user(
+        db_session, user_data["email"], user_data["password"]
+    )
+    assert logged_in_user is None, "Locked user should not be able to log in"

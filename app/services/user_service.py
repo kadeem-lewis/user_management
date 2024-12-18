@@ -249,3 +249,27 @@ class UserService:
             await session.commit()
             return True
         return False
+
+    @classmethod
+    async def update_professional_status(
+        cls, session: AsyncSession, user_id: UUID, is_professional: bool
+    ) -> Optional[User]:
+        """Update the professional status of a user and notify them."""
+        try:
+            user = await cls.get_by_id(session, user_id)
+            if not user:
+                return None
+            user.update_professional_status(is_professional)
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+            # Send notification email
+            email_service = get_email_service()
+            await email_service.send_professional_status_update_email(user)
+
+            return user
+        except Exception as e:
+            logger.error(f"Error updating professional status for user {user_id}: {e}")
+            await session.rollback()
+            return None

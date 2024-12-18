@@ -34,6 +34,7 @@ from app.schemas.user_schemas import (
     UserListResponse,
     UserResponse,
     UserUpdate,
+    UpdateStatusRequest,
 )
 from app.services.user_service import UserService
 from app.services.jwt_service import create_access_token
@@ -262,6 +263,55 @@ async def list_users(
     )
 
 
+@router.put(
+    "/users/{user_id}/status",
+    response_model=UserResponse,
+    name="update_user_status",
+    tags=["User Management Requires (Admin Role)"],
+)
+async def update_user_status(
+    user_id: UUID,
+    status_update: UpdateStatusRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_role(["ADMIN"])),
+):
+    """
+    Update the professional status of a user.
+
+    Args:
+        user_id: UUID of the user to update.
+        status_update: Request body containing the new professional status.
+        db: Database session for querying and updating user data.
+        current_user: The currently authenticated admin user.
+
+    Returns:
+        Updated user profile.
+    """
+    updated_user = await UserService.update_professional_status(
+        db, user_id, status_update.is_professional
+    )
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return UserResponse.model_construct(
+        id=updated_user.id,
+        bio=updated_user.bio,
+        first_name=updated_user.first_name,
+        last_name=updated_user.last_name,
+        nickname=updated_user.nickname,
+        email=updated_user.email,
+        role=updated_user.role,
+        is_professional=updated_user.is_professional,
+        last_login_at=updated_user.last_login_at,
+        profile_picture_url=updated_user.profile_picture_url,
+        github_profile_url=updated_user.github_profile_url,
+        linkedin_profile_url=updated_user.linkedin_profile_url,
+        created_at=updated_user.created_at,
+        updated_at=updated_user.updated_at,
+    )
+
+
 @router.post("/register/", response_model=UserResponse, tags=["Login and Registration"])
 async def register(
     user_data: UserCreate,
@@ -325,4 +375,56 @@ async def verify_email(
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid or expired verification token",
+    )
+
+
+@router.put(
+    "/profile",
+    response_model=UserResponse,
+    name="update_profile",
+    tags=["User Management"],
+)
+async def update_profile(
+    user_update: UserUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update the profile details of the currently authenticated user.
+
+    Args:
+
+        user_update: The updated profile details.
+        request: The HTTP request object for generating HATEOAS links.
+        db: Database session for querying and updating user data.
+        current_user: The currently authenticated user's data.
+
+    Returns:
+        Updated user profile.
+    """
+    user_id = current_user["user_id"]
+    user_data = user_update.model_dump(exclude_unset=True)
+
+    updated_user = await UserService.update(db, user_id, user_data)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    return UserResponse.model_construct(
+        id=updated_user.id,
+        bio=updated_user.bio,
+        first_name=updated_user.first_name,
+        last_name=updated_user.last_name,
+        nickname=updated_user.nickname,
+        email=updated_user.email,
+        role=updated_user.role,
+        last_login_at=updated_user.last_login_at,
+        profile_picture_url=updated_user.profile_picture_url,
+        github_profile_url=updated_user.github_profile_url,
+        linkedin_profile_url=updated_user.linkedin_profile_url,
+        created_at=updated_user.created_at,
+        updated_at=updated_user.updated_at,
+        links=create_user_links(updated_user.id, request),
     )
