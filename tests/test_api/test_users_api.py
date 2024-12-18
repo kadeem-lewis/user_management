@@ -251,3 +251,68 @@ async def test_list_users_unauthorized(async_client, user_token):
         "/users/", headers={"Authorization": f"Bearer {user_token}"}
     )
     assert response.status_code == 403  # Forbidden, as expected for regular user
+
+
+@pytest.mark.asyncio
+async def test_update_profile_success(async_client, user_token):
+    """Test updating profile for an authenticated user."""
+    headers = {"Authorization": f"Bearer {user_token}"}
+    payload = {
+        "first_name": "UpdatedFirstName",
+        "bio": "Updated bio for the user.",
+    }
+    response = await async_client.put(
+        "/profile",
+        json=payload,
+        headers=headers,
+    )
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response["first_name"] == "UpdatedFirstName"
+    assert json_response["bio"] == "Updated bio for the user."
+
+
+@pytest.mark.asyncio
+async def test_update_profile_missing_auth(async_client):
+    """Test updating profile without authentication."""
+    payload = {"first_name": "UpdatedFirstName", "bio": "Updated bio for the user."}
+    response = await async_client.put("/profile", json=payload)
+    assert response.status_code == 401  # Unauthorized
+    assert "Not authenticated" in response.json().get("detail", "")
+
+
+@pytest.mark.asyncio
+async def test_update_profile_invalid_data(async_client, user_token):
+    """Test updating profile with invalid data."""
+    headers = {"Authorization": f"Bearer {user_token}"}
+    payload = {}  # No valid fields provided
+    response = await async_client.put(
+        "/profile",
+        json=payload,
+        headers=headers,
+    )
+    assert response.status_code == 422  # Unprocessable Entity
+    assert "value_error" in response.json()["detail"][0]["type"]
+
+
+@pytest.fixture
+def fake_token():
+    """Return a fake token for testing."""
+    return "fake_token"
+
+
+@pytest.mark.asyncio
+async def test_update_profile_user_not_found(async_client, fake_token):
+    """Test updating profile for a non-existent user."""
+
+    headers = {"Authorization": f"Bearer {fake_token}"}
+    payload = {
+        "first_name": "NonExistentUser",
+        "bio": "This user does not exist anymore.",
+    }
+    response = await async_client.put(
+        "/profile",
+        json=payload,
+        headers=headers,
+    )
+    assert response.status_code == 401  # Unauthorized
