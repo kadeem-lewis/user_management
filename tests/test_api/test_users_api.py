@@ -316,3 +316,18 @@ async def test_update_profile_user_not_found(async_client, fake_token):
         headers=headers,
     )
     assert response.status_code == 401  # Unauthorized
+
+
+@pytest.mark.asyncio
+async def test_update_user_professional_status_allowed(
+    async_client, admin_token, admin_user
+):
+    """Test that an admin can update a user's professional status."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.put(
+        f"/users/{admin_user.id}/status",
+        json={"is_professional": True},  # Correctly formatted JSON payload
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["is_professional"] is True
