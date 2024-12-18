@@ -326,3 +326,55 @@ async def verify_email(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid or expired verification token",
     )
+
+
+@router.put(
+    "/profile",
+    response_model=UserResponse,
+    name="update_profile",
+    tags=["User Management"],
+)
+async def update_profile(
+    user_update: UserUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Update the profile details of the currently authenticated user.
+
+    Args:
+
+        user_update: The updated profile details.
+        request: The HTTP request object for generating HATEOAS links.
+        db: Database session for querying and updating user data.
+        current_user: The currently authenticated user's data.
+
+    Returns:
+        Updated user profile.
+    """
+    user_id = current_user["user_id"]
+    user_data = user_update.model_dump(exclude_unset=True)
+
+    updated_user = await UserService.update(db, user_id, user_data)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    return UserResponse.model_construct(
+        id=updated_user.id,
+        bio=updated_user.bio,
+        first_name=updated_user.first_name,
+        last_name=updated_user.last_name,
+        nickname=updated_user.nickname,
+        email=updated_user.email,
+        role=updated_user.role,
+        last_login_at=updated_user.last_login_at,
+        profile_picture_url=updated_user.profile_picture_url,
+        github_profile_url=updated_user.github_profile_url,
+        linkedin_profile_url=updated_user.linkedin_profile_url,
+        created_at=updated_user.created_at,
+        updated_at=updated_user.updated_at,
+        links=create_user_links(updated_user.id, request),
+    )
