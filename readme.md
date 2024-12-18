@@ -24,13 +24,13 @@ Enhance the user profile management functionality to allow users to update their
 
 ### Tests for Feature
 
-[Link to feature test issue](https://github.com/kadeem-lewis/user_management/issues/15)
-[Link to user api tests commit](https://github.com/kadeem-lewis/user_management/pull/17/commits/7197b5597a376447d24eef89c353e4582e1423ff)
-[Link to email tests commit](https://github.com/kadeem-lewis/user_management/pull/22/commits/76b2cb8d7f5b9302b86b71d79c853b6bff31137a)
+- [Link to feature test issue](https://github.com/kadeem-lewis/user_management/issues/15)
+- [Link to user api tests commit](https://github.com/kadeem-lewis/user_management/pull/17/commits/7197b5597a376447d24eef89c353e4582e1423ff)
+- [Link to email tests commit](https://github.com/kadeem-lewis/user_management/pull/22/commits/76b2cb8d7f5b9302b86b71d79c853b6bff31137a)
 
 ### Additional QA Tests
-[Link your additional QA test issue](https://github.com/kadeem-lewis/user_management/issues/16)
-[Link to additional QA test PR](https://github.com/kadeem-lewis/user_management/pull/24)
+- [Link your additional QA test issue](https://github.com/kadeem-lewis/user_management/issues/16)
+- [Link to additional QA test PR](https://github.com/kadeem-lewis/user_management/pull/24)
 
 
 ## Dockerhub Repo
