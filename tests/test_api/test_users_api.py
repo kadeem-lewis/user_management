@@ -107,6 +107,15 @@ async def test_create_user_invalid_email(async_client):
 
 
 @pytest.mark.asyncio
+async def test_create_user_missing_required_fields(async_client, admin_token):
+    """Test creating a user without required fields."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.post("/users/", json={}, headers=headers)
+    assert response.status_code == 422
+    assert "detail" in response.json()
+
+
+@pytest.mark.asyncio
 async def test_login_success(async_client, verified_user):
     """Test successful login with valid credentials."""
     # Attempt to login with the test user
@@ -223,6 +232,18 @@ async def test_update_user_linkedin(async_client, admin_user, admin_token):
     assert (
         response.json()["linkedin_profile_url"] == updated_data["linkedin_profile_url"]
     )
+
+
+@pytest.mark.asyncio
+async def test_update_user_invalid_json(async_client, admin_user, admin_token):
+    """Test updating a user with invalid JSON payload."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    invalid_json = "{invalid_json: true"  # Missing closing bracket
+    response = await async_client.put(
+        f"/users/{admin_user.id}", data=invalid_json, headers=headers
+    )
+    assert response.status_code == 422
+    assert "JSON decode error" in response.text
 
 
 @pytest.mark.asyncio
