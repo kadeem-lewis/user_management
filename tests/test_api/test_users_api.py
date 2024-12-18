@@ -235,6 +235,18 @@ async def test_update_user_linkedin(async_client, admin_user, admin_token):
 
 
 @pytest.mark.asyncio
+async def test_update_user_invalid_json(async_client, admin_user, admin_token):
+    """Test updating a user with invalid JSON payload."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    invalid_json = "{invalid_json: true"  # Missing closing bracket
+    response = await async_client.put(
+        f"/users/{admin_user.id}", data=invalid_json, headers=headers
+    )
+    assert response.status_code == 422
+    assert "JSON decode error" in response.text
+
+
+@pytest.mark.asyncio
 async def test_list_users_as_admin(async_client, admin_token):
     """Test listing users as an admin."""
     response = await async_client.get(
