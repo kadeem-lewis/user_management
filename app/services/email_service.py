@@ -26,6 +26,7 @@ class EmailService:
             "email_verification": "Verify Your Account",
             "password_reset": "Password Reset Instructions",
             "account_locked": "Account Locked Notification",
+            "professional_status_update": "Professional Status Update",
         }
 
         if email_type not in subject_map:
@@ -46,4 +47,16 @@ class EmailService:
                 "email": user.email,
             },
             "email_verification",
+        )
+
+    async def send_professional_status_update_email(self, user: User):
+        """Send an email notifying the user of their professional status update."""
+        status = "Professional" if user.is_professional else "Non-Professional"
+        await self.send_user_email(
+            {
+                "name": user.first_name,
+                "status": status,
+                "email": user.email,
+            },
+            "professional_status_update",
         )
