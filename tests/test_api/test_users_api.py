@@ -107,6 +107,15 @@ async def test_create_user_invalid_email(async_client):
 
 
 @pytest.mark.asyncio
+async def test_create_user_missing_required_fields(async_client, admin_token):
+    """Test creating a user without required fields."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.post("/users/", json={}, headers=headers)
+    assert response.status_code == 422
+    assert "detail" in response.json()
+
+
+@pytest.mark.asyncio
 async def test_login_success(async_client, verified_user):
     """Test successful login with valid credentials."""
     # Attempt to login with the test user
